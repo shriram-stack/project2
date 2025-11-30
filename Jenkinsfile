@@ -1,24 +1,15 @@
-cd ~/project2/Trend
-cat > Jenkinsfile << 'EOF'
 pipeline {
     agent any
     environment {
         IMAGE = "shriram123/trend-app"
     }
     stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
         stage('Build & Push Docker') {
             steps {
-                dir('.') {
-                    sh "docker build -t ${IMAGE}:latest ."
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                        sh 'echo $PASS | docker login -u $USER --password-stdin'
-                        sh "docker push ${IMAGE}:latest"
-                    }
+                sh "docker build -t ${IMAGE}:latest ."
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                    sh 'echo $PASS | docker login -u $USER --password-stdin'
+                    sh "docker push ${IMAGE}:latest"
                 }
             }
         }
@@ -29,15 +20,10 @@ pipeline {
                 kubectl apply -f k8s/deployment.yaml
                 kubectl apply -f k8s/service.yaml
                 kubectl rollout restart deployment/trend-app || true
-                echo "Live URL:"
+                echo "===== YOUR LIVE APP URL ====="
                 kubectl get svc trend-service
                 '''
             }
         }
     }
 }
-EOF
-
-git add Jenkinsfile
-git commit -m "Final bulletproof Jenkinsfile"
-git push origin main
